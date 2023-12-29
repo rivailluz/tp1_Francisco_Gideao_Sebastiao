@@ -174,63 +174,61 @@ with open("../amazon-meta.txt", "r") as file:
 
         print('Inserindo dados no banco de dados...')
 
-        # # PARTE PARA INSERIR OS DADOS NO BANCO DE CUSTOMERS
-        # print('Inserindo customers no banco de dados...')
-        # insert_list_customer(connection, list_customers)
-        # # for customer in list_customers:
-        # #     insert_customer(cursor, customer)
-        # list_customers.clear()
-        #
-        # # PARTE PARA INSERIR OS DADOS NO BANCO DE GRUPO
-        # print('Inserindo grupos no banco de dados...')
-        # insert_list_group(connection, list_groups)
-        # # for group in list_groups:
-        # #     insert_group(cursor, group)
-        # list_groups.clear()
-        #
-        # # PARTE PARA INSERIR OS DADOS NO BANCO DE PRODUTOS
-        # print('Inserindo produtos no banco de dados...')
-        # insert_list_product(connection, list_products)
-        #
-        # # PARTE PARA INSERIR OS PRODUTOS SIMILARES
-        # list_asin_existentes = {}
-        # print('Inserindo produtos similares no banco de dados...')
-        # for product in list_products:
-        #     list_asin_existentes[product.ASIN] = True
-        #
-        # for similar_product in list_similar_products:
-        #     count = 0
-        #     tamanho = len(similar_product.id_products_similares)
-        #     list_remove = []
-        #     while count < tamanho:
-        #         asin_similar = similar_product.id_products_similares[count]
-        #         verification = list_asin_existentes.get(asin_similar, False)
-        #         if verification is False:
-        #             similar_product.remover_produto_similar(asin_similar)
-        #             tamanho -= 1
-        #         else:
-        #             count += 1
-        # list_asin_existentes.clear()
-        # insert_list_similarity_products(connection, list_similar_products)
-        # list_similar_products.clear()
-        # list_products.clear()
+        # PARTE PARA INSERIR OS DADOS NO BANCO DE CUSTOMERS
+        print('Inserindo customers no banco de dados...')
+        insert_list_customer(connection, list_customers)
+        # for customer in list_customers:
+        #     insert_customer(cursor, customer)
+        list_customers.clear()
+
+        # PARTE PARA INSERIR OS DADOS NO BANCO DE GRUPO
+        print('Inserindo grupos no banco de dados...')
+        insert_list_group(connection, list_groups)
+        # for group in list_groups:
+        #     insert_group(cursor, group)
+        list_groups.clear()
+
+        # PARTE PARA INSERIR OS DADOS NO BANCO DE PRODUTOS
+        print('Inserindo produtos no banco de dados...')
+        insert_list_product(connection, list_products)
+
+        # PARTE PARA INSERIR OS PRODUTOS SIMILARES
+        list_asin_existentes = {}
+        print('Inserindo produtos similares no banco de dados...')
+        for product in list_products:
+            list_asin_existentes[product.ASIN] = True
+
+        for similar_product in list_similar_products:
+            count = 0
+            tamanho = len(similar_product.id_products_similares)
+            list_remove = []
+            while count < tamanho:
+                asin_similar = similar_product.id_products_similares[count]
+                verification = list_asin_existentes.get(asin_similar, False)
+                if verification is False:
+                    similar_product.remover_produto_similar(asin_similar)
+                    tamanho -= 1
+                else:
+                    count += 1
+        list_asin_existentes.clear()
+        insert_list_similarity_products(connection, list_similar_products)
+        list_similar_products.clear()
+        list_products.clear()
 
         # PARTE PARA INSERIR OS DADOS DE CATEGORIAS NO BANCO
         print('Inserindo categorias no banco de dados...')
-        for category in list_categories.values():
-            print(category)
-        # insert_list_category(connection, list_categories)
-        # list_categories.clear()
-        #
-        # # PARTE PARA INSERIR OS DADOS NO BANCO DE CATEGORIAS DE PRODUTOS
-        # print('Inserindo categorias de produtos no banco de dados...')
-        # insert_category_product_list(connection, list_categories_produto)
-        # list_categories_produto.clear()
-        #
-        # # PARTE PARA INSERIR OS DADOS NO BANCO DE REVIEWS
-        # print('Inserindo reviews no banco de dados...')
-        # insert_list_review(connection, list_reviews)
-        # list_reviews.clear()
+        insert_list_category(connection, list_categories)
+        list_categories.clear()
+
+        # PARTE PARA INSERIR OS DADOS NO BANCO DE CATEGORIAS DE PRODUTOS
+        print('Inserindo categorias de produtos no banco de dados...')
+        insert_category_product_list(connection, list_categories_produto)
+        list_categories_produto.clear()
+
+        # PARTE PARA INSERIR OS DADOS NO BANCO DE REVIEWS
+        print('Inserindo reviews no banco de dados...')
+        insert_list_review(connection, list_reviews)
+        list_reviews.clear()
 
         connection.commit()
         cursor.close()
