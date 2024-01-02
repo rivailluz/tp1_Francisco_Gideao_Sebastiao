@@ -16,7 +16,7 @@ from entities.categoria_produto import CategoriaProduto
 from insert_functions import *
 
 
-def createDatabase():
+def create_database():
     params = config(default=True)
     print(params)
     connection = psycopg2.connect(**params)
@@ -42,7 +42,7 @@ argumentos = sys.argv[1:]
 
 if len(argumentos) >= 1:
     if argumentos[0] == 'create':
-        createDatabase()
+        create_database()
 
 print('Trabalho Prático 1 - 2023.2')
 print('Criando tabelas...')
