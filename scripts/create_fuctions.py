@@ -84,7 +84,7 @@ def create_table_review(conn):
                     rating INT NOT NULL,
                     votes INT NOT NULL,
                     helpful INT NOT NULL,
-                    CONSTRAINT fk_customer FOREIGN KEY (id_customer) REFERENCES customer (id) ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_customer FOREIGN KEY (id_customer) REFERENCES customer (cod) ON DELETE CASCADE ON UPDATE CASCADE,
                     CONSTRAINT fk_product FOREIGN KEY (id_product) REFERENCES product (id) ON DELETE CASCADE ON UPDATE CASCADE
                 );
             """)
@@ -136,12 +136,14 @@ def createAllTables():
     connection = psycopg2.connect(**params)
     try:
         sql_create_customer_table = """CREATE TABLE IF NOT EXISTS customer (
-                                        id VARCHAR(24) PRIMARY KEY
+                                        cod VARCHAR(16) PRIMARY KEY
                                     );"""
+
         sql_create_group_table = """CREATE TABLE IF NOT EXISTS "group" (
                                         id SERIAL PRIMARY KEY,
                                         name VARCHAR(32) UNIQUE NOT NULL
                                     );"""
+
         sql_create_category_table = """CREATE TABLE IF NOT EXISTS category (
                                         id INT PRIMARY KEY,
                                         name VARCHAR(255) NOT NULL,
@@ -149,32 +151,33 @@ def createAllTables():
                                         CONSTRAINT fk_category FOREIGN KEY (parent_id) REFERENCES category (id) 
                                         on delete SET NULL on update CASCADE
                                         );"""
+
         sql_create_product_table = """CREATE TABLE IF NOT EXISTS product (
                                         id INT PRIMARY KEY,
-                                        ASIN VARCHAR(255) NOT NULL,
+                                        ASIN VARCHAR(255) NOT NULL UNIQUE,
                                         salesrank INT NULL,
                                         title VARCHAR(512) NULL,
                                         id_group INT NULL,
                                         CONSTRAINT fk_group FOREIGN KEY (id_group) REFERENCES "group" (id) 
-                                        on delete SET NULL on update CASCADE,
-                                        CONSTRAINT uk_ASIN UNIQUE (ASIN)
+                                        on delete SET NULL on update CASCADE
                                     );"""
+
         sql_create_review_table = """CREATE TABLE IF NOT EXISTS review (
                                         id serial PRIMARY KEY,
                                         id_product INT NOT NULL,
-                                        id_customer VARCHAR(24) NOT NULL,
+                                        cod_customer VARCHAR(16) NOT NULL,
                                         date_created DATE NOT NULL,
                                         rating INT NOT NULL,
                                         votes INT NOT NULL,
                                         helpful INT NOT NULL,
-                                        CONSTRAINT fk_customer FOREIGN KEY (id_customer) REFERENCES customer (id) 
+                                        CONSTRAINT fk_customer FOREIGN KEY (cod_customer) REFERENCES customer (cod) 
                                         ON DELETE CASCADE ON UPDATE CASCADE,
                                         CONSTRAINT fk_product FOREIGN KEY (id_product) REFERENCES product (id) 
                                         ON DELETE CASCADE ON UPDATE CASCADE
                                     );"""
         sql_create_category_product_table = """CREATE TABLE IF NOT EXISTS category_product (
-                                        id_product INT NOT NULL,
-                                        id_category INT NOT NULL,
+                                        id_product INT,
+                                        id_category INT, 
                                         primary key (id_product, id_category),
                                         CONSTRAINT fk_category_product FOREIGN KEY (id_category) REFERENCES category (id) 
                                         on delete CASCADE on update CASCADE,

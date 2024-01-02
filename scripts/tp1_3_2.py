@@ -1,6 +1,7 @@
 import psycopg2
 import sys
 import re
+import time
 
 from create_fuctions import createAllTables
 from config import config
@@ -16,9 +17,10 @@ from insert_functions import *
 
 
 def createDatabase():
+    params = config(default=True)
+    print(params)
+    connection = psycopg2.connect(**params)
     try:
-        params = config(default=True)
-        connection = psycopg2.connect(**params)
         connection.autocommit = True
 
         exists_query = "SELECT * FROM pg_database where datname = 'amazon';"
@@ -47,11 +49,12 @@ print('Criando tabelas...')
 createAllTables()
 
 print('Separando os dados do arquivo...')
-with open("../amazon-meta.txt", "r") as file:
+with open("./amazon-meta.txt", "r",  encoding='utf-8') as file:
     try:
         params = config()
         connection = psycopg2.connect(**params)
         cursor = connection.cursor()
+
         list_customers = set()
 
         list_products = []
@@ -67,10 +70,12 @@ with open("../amazon-meta.txt", "r") as file:
         category = None
         padrao = re.compile(r"^(.+)\[(\d+)]$")
 
-        list_categories_produto = []
+        list_categories_produto = set()
 
         list_groups = set()
-        for number, line in enumerate(file, start=1):
+        start_time = time.time()
+
+        for line in file:
             info = line.split()
             if len(info) < 1:
                 continue
@@ -82,80 +87,73 @@ with open("../amazon-meta.txt", "r") as file:
                 if product is not None:
                     list_products.append(product)
                 product = Produto(int(info[1]))
-            if info[0].startswith('ASIN:'):
+            elif info[0].startswith('ASIN:'):
                 product.ASIN = info[1]
-            if info[0].startswith('title:'):
+            elif info[0].startswith('title:'):
                 product.title = " ".join(info[1:])
-            if info[0].startswith('group:'):
-                product.group = " ".join(info[1:])
-            if info[0].startswith('salesrank:'):
+            elif info[0].startswith('group:'):
+                ###################
+                # GROUP
+                ###################
+                group_name = " ".join(info[1:])
+                product.group = group_name
+                list_groups.add(group_name)
+            elif info[0].startswith('salesrank:'):
                 product.salesrank = int(info[1])
 
-            ###################
-            # GROUP
-            ###################
-            if info[0].startswith('group:'):
-                name_group = " ".join(info[1:])
-                list_groups.add(name_group)
 
             ###################
             # CATEGORY
             ###################
-            if info[0].startswith('categories:'):
+            elif info[0].startswith('categories:'):
                 total_categories = int(info[1])
-                if total_categories > 0:
-                    for _ in range(total_categories):
-                        line = next(file)
-                        info_category = line.split('|')
-                        if len(info_category) < 1:
-                            break
-                        id_category = None
-                        category_fields = padrao.match(info_category[0])
+                count = 0
+                while count < total_categories:
+                    line = next(file)
+                    info_category = line.split('|')
+                    if len(info_category) < 1:
+                        break
+                    id_category = None
+                    category_fields = padrao.match(info_category[0])
+                    if category_fields is not None:
+                        category_name = category_fields.group(1).strip()
+                        category_id = int(category_fields.group(2).strip())
+                        list_categories[category_id] = (Categoria(category_id, category_name))
+                        id_category = category_id
+                    for category in info_category[1:]:
+                        category_fields = padrao.match(category)
                         if category_fields is not None:
                             category_name = category_fields.group(1).strip()
                             category_id = int(category_fields.group(2).strip())
-                            list_categories[category_id] = (Categoria(category_id, category_name))
+                            list_categories[category_id] = (Categoria(category_id, category_name, id_category))
                             id_category = category_id
-                        for category in info_category[1:]:
-                            category_fields = padrao.match(category)
-                            if category_fields is not None:
-                                category_name = category_fields.group(1).strip()
-                                category_id = int(category_fields.group(2).strip())
-                                list_categories[category_id] = (Categoria(category_id, category_name, id_category))
-                                id_category = category_id
-
-                        if product is not None:
-                            list_categories_produto.append(CategoriaProduto(product.id, id_category))
+                    list_categories_produto.add(CategoriaProduto(product.id, id_category))
+                    count += 1
 
             ###################
             # Product Similarities
             ###################
-            if len(info) >= 2 and info[0].startswith("similar:"):
+            elif len(info) >= 2 and info[0].startswith("similar:"):
                 quantity_similar = int(info[1])
                 if quantity_similar > 0:
                     if similar_product is not None:
                         list_similar_products.append(similar_product)
                     similar_product = ProdutosSimilares(product.ASIN)
-                    for _ in range(quantity_similar):
-                        similar_product.adicionar_produto_similar(info[2 + _])
+                    count = 0
+                    while count < quantity_similar:
+                        similar_product.adicionar_produto_similar(info[2 + count])
+                        count += 1
 
             ################
             # REVIEW
             ################
-            if len(info) >= 1 and line.split()[0].startswith("reviews:"):
+            elif line.split()[0].startswith("reviews:"):
                 total_reviews = int(line.split()[4])
                 if total_reviews > 0:
-                    count = 0
-                    while count < total_reviews:
-                        count += 1
+                    for i in range(total_reviews):
                         line = next(file)
                         info_review = line.split()
-                        if len(info_review) <= 2:
-                            # print(info_review)
-                            break
 
-                        if review is not None:
-                            list_reviews.append(review)
                         review = Review(product.id)
                         review.date = datetime.strptime(info_review[0], "%Y-%m-%d").date()
                         review.customer_id = info_review[2]
@@ -165,6 +163,7 @@ with open("../amazon-meta.txt", "r") as file:
 
                         customer_id = info_review[2]
                         list_customers.add(customer_id)
+                        list_reviews.append(review)
 
         if product is not None:
             list_products.append(product)
@@ -172,11 +171,23 @@ with open("../amazon-meta.txt", "r") as file:
         if review is not None:
             list_reviews.append(review)
 
+        end_time = time.time()
+
+        print('Tempo de execução com array: ', end_time - start_time)
+        print('Tempo de inicio: ', start_time)
+        print('Tempo de fim: ', end_time)
+
         print('Inserindo dados no banco de dados...')
 
         # PARTE PARA INSERIR OS DADOS NO BANCO DE CUSTOMERS
         print('Inserindo customers no banco de dados...')
+
+        start_time = time.time()
         insert_list_customer(connection, list_customers)
+        end_time = time.time()
+        print('Tempo de execução com array: ', end_time - start_time)
+        print('Tempo de inicio: ', start_time)
+        print('Tempo de fim: ', end_time)
         # for customer in list_customers:
         #     insert_customer(cursor, customer)
         list_customers.clear()
@@ -237,6 +248,9 @@ with open("../amazon-meta.txt", "r") as file:
     except (Exception, psycopg2.DatabaseError) as error:
         connection.rollback()
         print(error)
+    except Exception as e:
+        print(e)
+        print('Fim do arquivo.')
     finally:
         if connection is not None:
             connection.close()
