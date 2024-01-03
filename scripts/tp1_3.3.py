@@ -1,5 +1,5 @@
 import os
-from scripts.search_functions import *
+from search_functions import *
 
 messageBack = 'Digite (v) para voltar e (x) para sair: '
 

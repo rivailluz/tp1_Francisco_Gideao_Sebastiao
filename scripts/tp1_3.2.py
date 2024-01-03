@@ -39,17 +39,22 @@ def create_database():
 
 
 argumentos = sys.argv[1:]
-
+path = "../amazon-meta.txt"
 if len(argumentos) >= 1:
-    if argumentos[0] == 'create':
-        create_database()
+    for argumento in argumentos:
+        if argumento == 'create':
+            create_database()
+        else:
+            path = argumento
+
 
 print('Trabalho Prático 1 - 2023.2')
 print('Criando tabelas...')
 createAllTables()
 
 print('Separando os dados do arquivo...')
-with open("./amazon-meta.txt", "r",  encoding='utf-8') as file:
+start_time = time.time()
+with open(path, "r", encoding='utf-8') as file:
     try:
         params = config()
         connection = psycopg2.connect(**params)
@@ -181,22 +186,11 @@ with open("./amazon-meta.txt", "r",  encoding='utf-8') as file:
 
         # PARTE PARA INSERIR OS DADOS NO BANCO DE CUSTOMERS
         print('Inserindo customers no banco de dados...')
-
-        start_time = time.time()
         insert_list_customer(connection, list_customers)
-        end_time = time.time()
-        print('Tempo de execução com array: ', end_time - start_time)
-        print('Tempo de inicio: ', start_time)
-        print('Tempo de fim: ', end_time)
-        # for customer in list_customers:
-        #     insert_customer(cursor, customer)
         list_customers.clear()
-
         # PARTE PARA INSERIR OS DADOS NO BANCO DE GRUPO
         print('Inserindo grupos no banco de dados...')
         insert_list_group(connection, list_groups)
-        # for group in list_groups:
-        #     insert_group(cursor, group)
         list_groups.clear()
 
         # PARTE PARA INSERIR OS DADOS NO BANCO DE PRODUTOS
@@ -204,6 +198,8 @@ with open("./amazon-meta.txt", "r",  encoding='utf-8') as file:
         insert_list_product(connection, list_products)
 
         # PARTE PARA INSERIR OS PRODUTOS SIMILARES
+        # Nesta parte, é necessário verificar se os produtos similares já existem no banco de dados, pois um produto
+        # similar pode existir no arquivo de entrada como produto similar porem não existir como produo no arquivo
         list_asin_existentes = {}
         print('Inserindo produtos similares no banco de dados...')
         for product in list_products:
@@ -245,6 +241,10 @@ with open("./amazon-meta.txt", "r",  encoding='utf-8') as file:
         cursor.close()
         connection.close()
         print('Dados inseridos com sucesso.')
+        end_time = time.time()
+        print('Tempo de execução com banco: ', end_time - start_time)
+        print('Tempo de inicio: ', start_time)
+        print('Tempo de fim: ', end_time)
     except (Exception, psycopg2.DatabaseError) as error:
         connection.rollback()
         print(error)

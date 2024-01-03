@@ -1,8 +1,16 @@
+"""
+Módulo com funções para criação de tabelas no banco de dados.
+Autor: Francisco Rivail Santos da Luz Junior
+Descrição: Módulo com funções para criação de tabelas no banco de dados."""
 from config import config
 import psycopg2
 
-# Função para criar a tabela de produtos
 def create_table_customer(conn):
+    """
+    Função para criar a tabela de clientes
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -13,11 +21,15 @@ def create_table_customer(conn):
         conn.commit()
         print("Tabela 'customer' criada com sucesso.")
     except Exception as e:
+        conn.rollback()
         print(f"Erro ao criar a tabela 'customer': {e}")
 
-
-# Função para criar a tabela de grupos
 def create_table_group(conn):
+    """
+    Função para criar a tabela de grupos
+    :param conn: Conexão com o banco de dados
+    :type Conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -31,9 +43,12 @@ def create_table_group(conn):
     except Exception as e:
         print(f"Erro ao criar a tabela 'group': {e}")
 
-
-# Função para criar a tabela de produtos
 def create_table_category(conn):
+    """
+    Função para criar a tabela de categorias
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -50,9 +65,12 @@ def create_table_category(conn):
     except Exception as e:
         print(f"Erro ao criar a tabela 'category': {e}")
 
-
-# Função para criar a tabela de produtos
 def create_table_product(conn):
+    """
+    Função para criar a tabela de produtos
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -70,9 +88,12 @@ def create_table_product(conn):
     except Exception as e:
         print(f"Erro ao criar a tabela 'produtct': {e}")
 
-
-# Função para criar a tabela de produtos
 def create_table_review(conn):
+    """
+    Função para criar a tabela de ‘reviews’
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -93,9 +114,12 @@ def create_table_review(conn):
     except Exception as e:
         print(f"Erro ao criar a tabela 'review': {e}")
 
-
-# Função para criar a tabela de produtos
 def create_table_category_product(conn):
+    """
+    Função para criar a tabela de categorias de produtos
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -112,9 +136,12 @@ def create_table_category_product(conn):
     except Exception as e:
         print(f"Erro ao criar a tabela 'category_product': {e}")
 
-
-# Função para criar tabela de produtos similares
 def create_table_similarity_products(conn):
+    """
+    Função para criar a tabela de produtos similares
+    :param conn: Conexão com o banco de dados
+    :type conn: psycopg2.extensions.connection
+    """
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -132,6 +159,9 @@ def create_table_similarity_products(conn):
         print(f"Erro ao criar a tabela 'similarity_products': {e}")
 
 def createAllTables():
+    """
+    Função para criar todas as tabelas do banco de dados
+    """
     params = config(default=False)
     connection = psycopg2.connect(**params)
     try:
@@ -179,7 +209,8 @@ def createAllTables():
                                         id_product INT,
                                         id_category INT, 
                                         primary key (id_product, id_category),
-                                        CONSTRAINT fk_category_product FOREIGN KEY (id_category) REFERENCES category (id) 
+                                        CONSTRAINT fk_category_product 
+                                        FOREIGN KEY (id_category) REFERENCES category (id) 
                                         on delete CASCADE on update CASCADE,
                                         CONSTRAINT fk_product_category FOREIGN KEY (id_product) REFERENCES product (id) 
                                         on delete CASCADE on update CASCADE
@@ -206,6 +237,7 @@ def createAllTables():
         connection.commit()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        connection.rollback()
     finally:
         if connection is not None:
             connection.close()
