@@ -1,4 +1,5 @@
 from psycopg2.extras import execute_batch
+
 """
 Módulo com funções para inserção de dados no banco de dados.
 Autor: Francisco Rivail Santos da Luz Junior
@@ -6,10 +7,9 @@ Descrição: Módulo com funções para inserção de dados no banco de dados.
 - Para as funções de inserção de um único dado, é necessário passar como parâmetro o cursor e o dado a ser inserido.
 - Para as funções de inserção de uma lista de dados, é necessário passar como parâmetro a conexão e a lista de dados
  a serem inseridos.
-- O método utilizado para inserção de uma lista de dados é o de concatenação de ‘strings’,
-pois é mais após teste de desempenho, com outros metódos(for, executemany, execute_batch)
-- e também pesquisas na ‘internet’, foi observado que o método de concatenação de ‘strings’ é o mais rápido.
+- O método utilizado para inserção de uma lista de dados é o execute_batch, que é mais rápido que o executemany.
 """
+
 
 def insert_customer(cursor, customer_id):
     """
@@ -119,8 +119,9 @@ def insert_list_customer(conn, list_customers):
     """
     try:
         with conn.cursor() as cursor:
-            list_values = ','.join(cursor.mogrify("(%s)", (customer,)).decode("utf-8") for customer in list_customers)
-            cursor.execute(f"INSERT INTO customer (cod) VALUES {list_values};")
+            sql = "INSERT INTO customer (cod) VALUES (%s);"
+            tuplas_values = [(customer,) for customer in list_customers]
+            execute_batch(cursor, sql, tuplas_values)
         print('Commiting customers...')
         conn.commit()
     except Exception as e:
@@ -140,10 +141,9 @@ def insert_list_group(conn, list_groups):
 
     try:
         with conn.cursor() as cursor:
-            print(list_groups)
-            list_values = ','.join(cursor.mogrify("(%s)", (group,)).decode("utf-8") for group in list_groups)
-            print(list_values)
-            cursor.execute(f"INSERT INTO \"group\" (name) VALUES {list_values};")
+            sql = "INSERT INTO \"group\" (name) VALUES (%s);"
+            tuplas_values = [(group,) for group in list_groups]
+            execute_batch(cursor, sql, tuplas_values)
         print('Commiting groups...')
         conn.commit()
     except Exception as e:
@@ -161,11 +161,10 @@ def insert_list_category(connection, list_categories):
 
     try:
         with connection.cursor() as cursor:
-            list_values = ','.join(
-                cursor.mogrify("(%s, %s, %s)", (category.id_categoria, category.nome, category.ancester_id)).decode(
-                    "utf-8") for category in list_categories.values())
-            cursor.execute(
-                f"INSERT INTO category (id, name, parent_id) VALUES {list_values} ON CONFLICT (id) DO NOTHING;")
+            sql = "INSERT INTO category (id, name, parent_id) VALUES (%s, %s, %s);"
+            tuplas_values = [(category.id_categoria, category.nome, category.ancester_id) for category in
+                             list_categories.values()]
+            execute_batch(cursor, sql, tuplas_values)
         print('Commiting categories...')
         connection.commit()
     except Exception as e:
@@ -180,10 +179,10 @@ def insert_category_product_list(connection, list_category_product):
     """
     try:
         with connection.cursor() as cursor:
-            list_values = ','.join(
-                cursor.mogrify("(%s, %s)", (category_product.id_produto, category_product.id_categoria)).decode(
-                    "utf-8") for category_product in list_category_product)
-            cursor.execute(f"INSERT INTO category_product (id_product, id_category) VALUES {list_values};")
+            sql = "INSERT INTO category_product (id_product, id_category) VALUES (%s, %s);"
+            tuplas_values = [(category_product.id_produto, category_product.id_categoria) for category_product in
+                             list_category_product]
+            execute_batch(cursor, sql, tuplas_values)
         print('Commiting category products...')
         connection.commit()
     except Exception as e:
@@ -201,17 +200,14 @@ def insert_list_product(connection, list_products):
     try:
         with connection.cursor() as cursor:
             dict_group = get_groups_dictionay(cursor)
-            list_values_id = ','.join(
-                cursor.mogrify("(%s, %s)", (product.id, product.ASIN)).decode("utf-8") for product in list_products if
-                product.title is None)
-            list_values_all = ','.join(
-                cursor.mogrify("(%s, %s, %s, %s, %s)", (
-                    product.id, product.ASIN, product.salesrank, product.title, dict_group[product.group])).decode(
-                    "utf-8") for product in list_products if product.title is not None)
-            if list_values_id != '':
-                cursor.execute(f"INSERT INTO product (id, asin) VALUES {list_values_id};")
-            if list_values_all != '':
-                cursor.execute(f"INSERT INTO product (id, asin, salesrank, title, id_group) VALUES {list_values_all};")
+            sqlAll = "INSERT INTO product (id, asin, salesrank, title, id_group) VALUES (%s, %s, %s, %s, %s);"
+            sqlTwo = "INSERT INTO product (id, asin) VALUES (%s, %s);"
+            tuplas_values_all = [(product.id, product.ASIN, product.salesrank, product.title, dict_group[product.group])
+                                 for product in list_products if product.title is not None]
+            tuplas_values_id = [(product.id, product.ASIN) for product in list_products if product.title is None]
+
+            execute_batch(cursor, sqlAll, tuplas_values_all)
+            execute_batch(cursor, sqlTwo, tuplas_values_id)
 
         print('Commiting products...')
         connection.commit()
@@ -230,13 +226,11 @@ def insert_list_similarity_products(connection, list_similarity_products):
     sql_insert = "INSERT INTO similarity_products (asin_product, asin_product_similar) VALUES "
     try:
         with connection.cursor() as cursor:
-            list_values = ','.join(
-                cursor.mogrify("(%s, %s)", (similarity_product.id_product, product_similar)).decode("utf-8") for
-                similarity_product in list_similarity_products for product_similar in
-                similarity_product.id_products_similares)
-
-            cursor.execute(
-                f"INSERT INTO similarity_products (asin_product, asin_product_similar) VALUES {list_values};")
+            sql = "INSERT INTO similarity_products (asin_product, asin_product_similar) VALUES (%s, %s);"
+            tuplas_values = [(similarity_product.id_product, product_similar) for similarity_product in
+                             list_similarity_products for product_similar in
+                             similarity_product.id_products_similares]
+            execute_batch(cursor, sql, tuplas_values)
         print('Commiting similarity products...')
         connection.commit()
     except Exception as e:
