@@ -23,12 +23,14 @@ def run_option(option):
     elif option == 'd':
         optionFunction = selectOptionD
     elif option == 'e':
-        optionFunction = selectOptionB
+        optionFunction = selectOptionE
     elif option == 'f':
-        optionFunction = selectOptionB
+        optionFunction = selectOptionF
     elif option == 'g':
         optionFunction = selectOptionG
     elif option == 'h':
+        optionFunction = selectOptionH
+    elif option == 'x':
         exit()
 
     clearTerminal()
@@ -46,7 +48,7 @@ def run_option(option):
 
 def optionValid(option):
     return (option == 'a' or option == 'b' or option == 'c' or option == 'd' or option == 'e'
-            or option == 'f' or option == 'g' or option == 'x')
+            or option == 'f' or option == 'g' or option == 'h' or option == 'x')
 
 
 def dashboard():
@@ -66,6 +68,8 @@ de entrada;''')
         print('''e) Listar os 10 produtos com a maior média de avaliações úteis positivas por produto;''')
         print('''f) Listar a 5 categorias de produto com a maior média de avaliações úteis positivas por produto;''')
         print('''g) Listar os 10 clientes que mais fizeram comentários por grupo de produto.''')
+        print('''h) Listar caminho completo da categoria de um produto na árvore de categoria.''')
+
         print('''x) Sair do programa.''')
         option = input('Digite a opção desejada: ')
 
@@ -76,4 +80,5 @@ de entrada;''')
         run_option(option)
 
 
-dashboard()
+if __name__ == '__main__':
+    dashboard()

@@ -21,7 +21,7 @@ def insert_customer(cursor, customer_id):
 
         """
     try:
-        cursor.execute("INSERT INTO customer (id) VALUES (%s) ON CONFLICT (id) DO NOTHING;", (customer_id,))
+        cursor.execute("INSERT INTO customer (cod) VALUES (%s) ON CONFLICT (id) DO NOTHING;", (customer_id,))
     except Exception as e:
         print(f"Erro ao inserir cliente: {e}")
 
@@ -83,7 +83,7 @@ def insert_review(cursor, product_id, customer_id, date_created, rating, votes, 
         helpful (int): ‘Helpful’ da revisão a ser inserida.
     """
     try:
-        cursor.execute("INSERT INTO review (id_product, id_customer, date_created, rating, votes, helpful) "
+        cursor.execute("INSERT INTO review (id_product, cod_customer, date_created, rating, votes, helpful) "
                        "VALUES (%s, %s, %s, %s, %s, %s);",
                        (product_id, customer_id, date_created, rating, votes, helpful))
     except Exception as e:
@@ -223,7 +223,6 @@ def insert_list_similarity_products(connection, list_similarity_products):
     :param list_similarity_products: Lista de produtos similares a serem inseridos.
     :type list_similarity_products: List
     """
-    sql_insert = "INSERT INTO similarity_products (asin_product, asin_product_similar) VALUES "
     try:
         with connection.cursor() as cursor:
             sql = "INSERT INTO similarity_products (asin_product, asin_product_similar) VALUES (%s, %s);"

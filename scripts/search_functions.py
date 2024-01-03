@@ -37,6 +37,30 @@ def verifyIdProduct(id_product):
             cursor.close()
             connection.close()
 
+def verifyIdCategory(id_category):
+    """
+    Verifica se o ‘id’ da categoria existe no banco de dados.
+    :param id_category: ‘Id’ da categoria
+    :type id_category: int
+    :return:
+    """
+    params = config()
+    connection = psycopg2.connect(**params)
+    try:
+        cursor = connection.cursor()
+
+        sql = f"SELECT * FROM category WHERE id = {id_category};"
+        cursor.execute(sql)
+        result = cursor.fetchone()
+
+        return result if result else False
+    except (Exception, psycopg2.DatabaseError) as error:
+        connection.rollback()
+        print(error)
+    finally:
+        if connection is not None:
+            cursor.close()
+            connection.close()
 
 def printTable(result, header):
     if result:
@@ -261,6 +285,12 @@ def selectOptionD():
             connection.close()
 
 def selectOptionE():
+    """
+    Listar os 10 produtos com a maior média de avaliações úteis positivas por produto;
+    A função realiza um select em ‘review’, calculando a média de avaliações úteis positivas por produto, ordenando os
+    produtos pela média de avaliações úteis positivas e limitando a 10 o número de produtos retornados.
+    Uma avaliação é considerada positiva se a avaliação for maior ou igual a 4.
+    """
     print('Listar os 10 produtos com a maior média de avaliações úteis positivas por produto')
     params = config()
     connection = psycopg2.connect(**params)
@@ -269,19 +299,21 @@ def selectOptionE():
         print('Realizando a consulta E: ')
         cursor = connection.cursor()
 
-        sql = f'''with RankingGroup as
-         (select  "group".name as group_name, review.id_customer, count(*), 
-         row_number() over (partition by "group".name order by count(*) desc) as ranking
-                from review
-                join product on review.id_product = product.id
-                join "group" on product.id_group = "group".id
-                group by review.id_customer, "group".name)
-                select * from RankingGroup where ranking <= 10
-                order by group_name, ranking;'''
+        sql = f'''with highest_helpful as (select round(avg(helpful), 4) as media_util, id_product
+        from review
+        where rating>= 4
+        group by id_product
+        order by avg(helpful) desc
+        limit 10)
+        select product.id, product.asin, product.title, "group".name, product.salesrank, highest_helpful.media_util
+        from product
+        join highest_helpful on product.id = highest_helpful.id_product
+        join "group" on product.id_group = "group".id
+        order by highest_helpful.media_util desc;'''
         cursor.execute(sql)
         result = cursor.fetchall()
         # Imprimir cabeçalho
-        header = (('group_name', 14), ('id_customer', 14), ('qdte_comment', 10), ('ranking', 8))
+        header = (('id_product', 10), ('ASIN', 10), ('title', 70), ('group_name', 16), ('salesrank', 10), ('media_util', 14))
         printTable(result, header)
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
@@ -291,29 +323,40 @@ def selectOptionE():
             connection.close()
 
 
-def selectOptionG():
-    print('Listar os 10 clientes que mais fizeram comentários por grupo de produto.')
+def selectOptionF():
+    """
+    Listar as 5 categorias de produto com a maior média de avaliações úteis positivas por produto.
+    A função realiza um select em ‘review’, calculando a média de avaliações úteis positivas por produto, ordenando os
+    produtos pela média de avaliações úteis positivas e limitando a 5 o número de produtos retornados.
+    Uma avaliação é considerada positiva se a avaliação for maior ou igual a 4.
+    """
+    print('Listar as 5 categorias de produto com a maior média de avaliações úteis positivas por produto.')
     params = config()
     connection = psycopg2.connect(**params)
 
     try:
-        print('Realizando a consulta G: ')
+        print('Realizando a consulta F: ')
         cursor = connection.cursor()
 
-        sql = f'''with RankingGroup as
-         (select  "group".name as group_name, review.id_customer, count(*), 
-         row_number() over (partition by "group".name order by count(*) desc) as ranking
-                from review
-                join product on review.id_product = product.id
-                join "group" on product.id_group = "group".id
-                group by review.id_customer, "group".name)
-                select * from RankingGroup where ranking <= 10
-                order by group_name, ranking;'''
+        sql = f'''with id_categories as (select round(avg(helpful), 4) as media_helpful, category_product.id_category
+    from review
+    inner join product on review.id_product = product.id
+    inner join category_product on product.id = category_product.id_product
+    where review.rating >= 4
+    group by category_product.id_category
+    order by avg(helpful) desc
+    limit 5)
+    select category.name, category.id, id_categories.media_helpful
+    from category
+    join id_categories on category.id = id_categories.id_category
+    order by id_categories.media_helpful desc;'''
         cursor.execute(sql)
         result = cursor.fetchall()
         # Imprimir cabeçalho
-        header = (('group_name', 14), ('id_customer', 14), ('qdte_comment', 10), ('ranking', 8))
+        header = (('name', 20), ('id', 14), ('media_helpful', 14))
         printTable(result, header)
+        print()
+        print('Para saber o caminho completo da categoria, use a opção h do dashboard passando seu id.')
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     finally:
@@ -345,6 +388,65 @@ def selectOptionG():
         # Imprimir cabeçalho
         header = (('group_name', 14), ('id_customer', 14), ('qdte_comment', 10), ('ranking', 8))
         printTable(result, header)
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if connection is not None:
+            cursor.close()
+            connection.close()
+
+
+def selectOptionH():
+    print('Listar o caminho completo da categoria.')
+    params = config()
+    connection = psycopg2.connect(**params)
+    id_product = input('Digite o id da categoria: ')
+    ready_search = False
+    backScreen = False
+
+    while not ready_search:
+        if id_product == 'v' or id_product == 'V':
+            backScreen = True
+            ready_search = True
+        else:
+            try:
+                id_product = int(id_product)
+            except ValueError:
+                id_product = input('Id deve ser um número inteiro, digite novamente(ou V para voltar): ')
+                continue
+            asin_product = verifyIdCategory(id_product)
+            if not asin_product:
+                id_product = input('Id não encontrado, digite novamente(ou V para voltar): ')
+                continue
+            else:
+                ready_search = True
+
+    try:
+        if not backScreen:
+            print('Realizando a consulta H: ')
+            cursor = connection.cursor()
+
+            sql = f'''WITH RECURSIVE category_path AS (
+    SELECT id, name, parent_id, name::text AS path
+    FROM category
+    WHERE id = {id_product} 
+    UNION
+    SELECT c.id, c.name, c.parent_id, (cp.path || ' < ' || c.name)::text
+    FROM category c
+    JOIN category_path cp ON cp.parent_id = c.id
+)
+SELECT path FROM category_path order by path desc limit 1;
+            '''
+
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            # Imprimir cabeçalho
+            if len(result) > 0:
+                header = (('path', len(result[0][0]) + 5),)
+                printTable(result, header)
+            else:
+                print('Categoria não encontrada.')
+
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     finally:
