@@ -37,16 +37,16 @@ def create_database():
         if connection is not None:
             connection.close()
 
+
 if __name__ == '__main__':
     argumentos = sys.argv[1:]
-    path = "../amazon-meta.txt"
+    path = "./amazon-meta.txt"
     if len(argumentos) >= 1:
         for argumento in argumentos:
             if argumento == 'create':
                 create_database()
             else:
                 path = argumento
-
 
     print('Trabalho Prático 1 - 2023.2')
     print('Criando tabelas...')
@@ -241,10 +241,7 @@ if __name__ == '__main__':
             cursor.close()
             connection.close()
             print('Dados inseridos com sucesso.')
-            end_time = time.time()
-            print('Tempo de execução com banco: ', end_time - start_time)
-            print('Tempo de inicio: ', start_time)
-            print('Tempo de fim: ', end_time)
+
         except (Exception, psycopg2.DatabaseError) as error:
             connection.rollback()
             print(error)
